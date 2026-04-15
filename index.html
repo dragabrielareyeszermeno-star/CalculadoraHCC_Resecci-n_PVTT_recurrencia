@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Algoritmo HCC Quirúrgico (PVTT/Recurrencia)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <style>
+    :root {
+      --primary: #1a4b7a;
+      --primary-dark: #153955;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #4b5563;
+      --border: #d1d5db;
+      --soft-blue: #f0f7ff;
+      --soft-blue-border: #c6ddff;
+      --soft-green: #ecfdf5;
+      --soft-green-border: #a7f3d0;
+      --soft-yellow: #fffbeb;
+      --soft-yellow-border: #fde68a;
+      --soft-red: #fef2f2;
+      --soft-red-border: #fecaca;
+      --shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary), #245f98);
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    main {
+      max-width: 980px;
+      margin: 1rem auto 6rem auto;
+      padding: 1rem;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    h1 { font-size: 1.2rem; margin: 0; }
+    h2 { font-size: 1.1rem; margin: 0 0 0.8rem 0; }
+    h3 { font-size: 1rem; margin: 1rem 0 0.5rem 0; }
+    p { margin: 0.5rem 0; }
+    .intro {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .warning-note {
+      font-size: 0.82rem;
+      color: #7c2d12;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      border-radius: 999px;
+      padding: 0.75rem 0.9rem;
+      margin-bottom: 1rem;
+    }
+    fieldset {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      padding: 0.85rem 1rem 1rem;
+    }
+    legend {
+      font-weight: 700;
+      padding: 0 0.4rem;
+      color: var(--primary);
+    }
+    label {
+      display: block;
+      margin-top: 0.45rem;
+      font-size: 0.93rem;
+      font-weight: 500;
+    }
+    input, select {
+      width: 100%;
+      min-height: 44px;
+      padding: 0.55rem 0.7rem;
+      margin-top: 0.18rem;
+      font-size: 0.95rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+    }
+    input:focus, select:focus {
+      outline: 2px solid rgba(26, 75, 122, 0.18);
+      border-color: var(--primary);
+    }
+    small, .helper {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .inline-note { margin-top: 0.2rem; }
+    button {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 0.92rem 1.1rem;
+      font-size: 0.97rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      min-height: 52px;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+    }
+    button:hover { background: linear-gradient(135deg, #1d4ed8, #1e40af); }
+    .secondary-btn {
+      background: #e5e7eb;
+      color: #111827;
+      box-shadow: none;
+    }
+    .secondary-btn:hover { background: #d1d5db; }
+    .success-btn {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+    }
+    .success-btn:hover { background: linear-gradient(135deg, #047857, #059669); }
+    .actions {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 0.8rem;
+    }
+    .sticky-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 20;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #e5e7eb;
+      padding-top: 0.8rem;
+      margin-top: 0.5rem;
+      pointer-events: auto;
+    }
+    .result, .summary-card, .validation-card {
+      margin-top: 1.25rem;
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--soft-blue-border);
+      background: var(--soft-blue);
+    }
+    .summary-card {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .validation-card {
+      background: var(--soft-red);
+      border-color: var(--soft-red-border);
+      color: #991b1b;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 0.45rem;
+    }
+    .badge-curative {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #34d399;
+    }
+    .badge-noncurative {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+    .evidence {
+      font-size: 0.88rem;
+      color: #374151;
+      margin-top: 0.5rem;
+    }
+    .evidence li, .summary-card li, .validation-card li { margin-bottom: 0.35rem; }
+    .summary-grid {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .fact-box {
+      border-radius: 10px;
+      padding: 0.8rem;
+      border: 1px solid #dbeafe;
+      background: #eff6ff;
+    }
+    .fact-box h4 {
+      margin: 0 0 0.35rem 0;
+      font-size: 0.9rem;
+      color: var(--primary);
+    }
+    .traffic-list { list-style: none; padding-left: 0; }
+    .traffic-list li {
+      padding-left: 1.6rem;
+      position: relative;
+      margin-bottom: 0.45rem;
+    }
+    .traffic-list li::before {
+      content: "●";
+      position: absolute;
+      left: 0.3rem;
+      top: 0;
+      font-size: 0.95rem;
+    }
+    .traffic-green li::before { color: #059669; }
+    .traffic-yellow li::before { color: #d97706; }
+    .traffic-red li::before { color: #dc2626; }
+    ul, ol { padding-left: 1.1rem; margin: 0.3rem 0; }
+    .hidden { display: none !important; }
+
+
+    @media (max-width: 768px) {
+      .sticky-actions {
+        position: static;
+        bottom: auto;
+        z-index: auto;
+        backdrop-filter: none;
+        background: transparent;
+        border-top: 0;
+        padding-top: 0;
+      }
+      .actions {
+        position: static;
+      }
+      button, .actions button {
+        min-height: 52px;
+        touch-action: manipulation;
+        -webkit-appearance: none;
+      }
+    }
+
+    @media (min-width: 700px) {
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem 1rem; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem 1rem; }
+      .actions { grid-template-columns: 1.15fr 0.7fr 0.9fr; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Algoritmo de decisión quirúrgica en HCC (resección / PVTT / recurrencia)</h1>
+</header>
+
+<main>
+  <p class="intro">
+    Herramienta educativa basada en Malik et al. Nat Rev Gastroenterol Hepatol 2025 y evidencia observacional/multicéntrica.
+  </p>
+  <div class="warning-note">
+    Uso educativo para discusión clínica multidisciplinaria. No sustituye juicio clínico, guías institucionales ni valoración de trasplante/hepatología/cirugía hepatobiliar.
+  </div>
+
+  <div id="validationBox" class="validation-card hidden" aria-live="polite">
+    <h2>Revisa estos datos antes de calcular</h2>
+    <ul id="validationList"></ul>
+  </div>
+
+  <form id="hccForm" novalidate>
+    <div class="section-kicker">EVALUACIÓN ACTUAL</div>
+
+    <fieldset>
+      <legend>Identificación (seudonimizada)</legend>
+      <div class="grid-2">
+        <label>
+          ID de paciente / caso
+          <input type="text" id="caseId" maxlength="40" placeholder="Ej. HCC-001" autocomplete="off" spellcheck="false">
+          <small class="field-help">No introducir nombre real, CURP u otros identificadores directos.</small>
+        </label>
+        <label>
+          Fecha de evaluación
+          <input type="date" id="evaluationDate">
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tipo de caso</legend>
+      <label>
+        Tipo de tumor
+        <select id="primaryOrRecurrent">
+          <option value="PRIMARY">Primario (sin tratamiento curativo previo)</option>
+          <option value="RECURRENCE">Recurrencia tras tratamiento curativo</option>
+        </select>
+      </label>
+      <label id="timeFromTxLabel" class="hidden">
+        Meses desde tratamiento curativo previo
+        <input type="number" id="timeFromCurativeTxMonths" min="0" step="1" value="12">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Paciente y función hepática</legend>
+      <div class="grid-3">
+        <label>
+          Edad (años)
+          <input type="number" id="age" min="18" max="100" value="62">
+        </label>
+        <label>
+          ECOG
+          <select id="ecog">
+            <option value="0">0</option>
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </label>
+        <label>
+          Etiología principal
+          <select id="etiology">
+            <option value="HBV">VHB</option>
+            <option value="HCV">VHC</option>
+            <option value="MASLD" selected>MASLD/MASH</option>
+            <option value="ALCOHOL">Alcohol</option>
+            <option value="AUTOIMMUNE">Hepatitis autoinmune</option>
+            <option value="PBC">Colangitis biliar primaria</option>
+            <option value="CHOLESTATIC">Otras colestásicas</option>
+            <option value="OTHER">Otra</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid-3">
+        <label>
+          Child–Pugh
+          <select id="childPugh">
+            <option value="A" selected>A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </label>
+        <label>
+          ALBI (1–3)
+          <select id="albiGrade">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </label>
+        <label>
+          Plaquetas (×10<sup>3</sup>/µL)
+          <input type="number" id="platelets" min="10" max="500" value="95">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          HVPG conocido
+          <select id="hvpgKnown">
+            <option value="false">No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+        <label id="hvpgValueLabel" class="hidden">
+          HVPG (mmHg)
+          <input type="number" id="hvpg" min="1" max="25" value="8">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Esplenomegalia
+          <select id="splenomegaly">
+            <option value="false">No</option>
+            <option value="true" selected>Sí</option>
+          </select>
+        </label>
+        <label>
+          Ascitis clínicamente relevante
+          <select id="ascites">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Encefalopatía
+          <select id="encephalopathy">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+        <label>
+          FLR (% volumen hepático)
+          <input type="number" id="flrPercent" min="10" max="90" value="38">
+        </label>
+      </div>
+
+      <label>
+        Calidad del FLR (RM gadoxetato/ICG aceptable)
+        <select id="flrQualityGood">
+          <option value="true" selected>Sí</option>
+          <option value="false">No / no evaluado</option>
+        </select>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Comorbilidades metabólicas</legend>
+      <div class="grid-3">
+        <label>
+          Diabetes tipo 2
+          <select id="diabetes2">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+        <label>
+          Prediabetes
+          <select id="prediabetes">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+        <label>
+          Resistencia a la insulina
+          <select id="insulinResistance">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+      </div>
+      <div class="grid-2">
+        <label>
+          Obesidad (IMC ≥30)
+          <select id="obesity">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+        <label>
+          Sobrepeso (IMC 25–29.9)
+          <select id="overweight">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tumor actual</legend>
+      <div class="grid-3">
+        <label>
+          BCLC
+          <select id="bclcStage">
+            <option value="0">0</option>
+            <option value="A" selected>A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </label>
+        <label>
+          Nº de tumores
+          <input type="number" id="numTumors" min="1" max="20" value="1">
+        </label>
+        <label>
+          Tamaño máximo (cm)
+          <input type="number" id="maxTumorSizeCm" min="0.1" step="0.1" value="4.2">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Enfermedad bilobar
+          <select id="bilobarDisease">
+            <option value="false" selected>No</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+        <label>
+          PVTT
+          <select id="pvttGrade">
+            <option value="Vp0" selected>Vp0 (sin PVTT)</option>
+            <option value="Vp1">Vp1</option>
+            <option value="Vp2">Vp2</option>
+            <option value="Vp3">Vp3</option>
+            <option value="Vp4">Vp4</option>
+          </select>
+        </label>
+      </div>
+
+      <label>
+        Enfermedad extrahepática
+        <select id="extrahepaticDisease">
+          <option value="false" selected>No</option>
+          <option value="true">Sí</option>
+        </select>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Biología tumoral</legend>
+      <div class="grid-3">
+        <label>
+          AFP (ng/mL)
+          <input type="number" id="afp" min="0" step="1" value="120">
+        </label>
+        <label>
+          Tendencia de AFP
+          <select id="afpTrend">
+            <option value="STABLE" selected>Estable</option>
+            <option value="RISING">Ascendente</option>
+            <option value="DECLINING">Descendente</option>
+          </select>
+        </label>
+        <label>
+          DCP (mAU/mL o equivalente)
+          <input type="number" id="dcp" min="0" step="1" value="80">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>
+          Subtipo macrotrabecular-masivo
+          <select id="macrotrabecular">
+            <option value="false" selected>No / desconocido</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+        <label>
+          PET-CT 18F-FDG muy captante
+          <select id="petHighUptake">
+            <option value="false" selected>No / no realizado</option>
+            <option value="true">Sí</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Contexto del centro</legend>
+      <div class="grid-3">
+        <label>
+          Acceso a trasplante
+          <select id="transplantAccess">
+            <option value="GOOD">Bueno (donante vivo / lista corta)</option>
+            <option value="LIMITED" selected>Limitado</option>
+            <option value="NO">No disponible</option>
+          </select>
+        </label>
+        <label>
+          TARE disponible
+          <select id="tareAvailable">
+            <option value="true" selected>Sí</option>
+            <option value="false">No</option>
+          </select>
+        </label>
+        <label>
+          SBRT disponible
+          <select id="sbrtAvailable">
+            <option value="true" selected>Sí</option>
+            <option value="false">No</option>
+          </select>
+        </label>
+      </div>
+
+      <label>
+        Inmunoterapia (ICI) disponible
+        <select id="immunotherapyAvailable">
+          <option value="true" selected>Sí</option>
+          <option value="false">No</option>
+        </select>
+      </label>
+    </fieldset>
+
+    <div class="sticky-actions">
+      <div class="actions">
+        <button type="submit">Calcular recomendación</button>
+        <button type="button" id="resetBtn" class="secondary-btn">Restablecer valores</button>
+        <button type="button" id="exportCsvBtn" class="success-btn">Exportar casos (CSV)</button>
+      </div>
+    </div>
+  </form>
+
+  <div id="caseSummary" class="summary-card hidden">
+    <h2>Resumen clínico del caso ingresado</h2>
+    <div id="summaryGrid" class="summary-grid"></div>
+  </div>
+
+  <div id="result" class="result hidden">
+    <div id="intentBadge" class="badge"></div>
+    <h2>Recomendación principal</h2>
+    <p id="primaryRecommendation"></p>
+
+    <h3>Factores que orientan la decisión</h3>
+    <div class="summary-grid">
+      <div class="fact-box">
+        <h4>A favor de enfoque curativo</h4>
+        <ul id="factorsForCurative" class="traffic-list traffic-green"></ul>
+      </div>
+      <div class="fact-box">
+        <h4>Factores de alerta o limitación</h4>
+        <ul id="factorsAgainstCurative" class="traffic-list traffic-red"></ul>
+      </div>
+    </div>
+
+    <h3>Opciones secundarias</h3>
+    <ul id="secondaryOptions"></ul>
+
+    <h3>Fundamento clínico</h3>
+    <div id="evidenceNotes" class="evidence"></div>
+
+    <h3>Referencias</h3>
+    <ol id="biblioList" class="evidence"></ol>
+  </div>
+</main>
+
+<script>
+(function () {
+  const form = document.getElementById("hccForm");
+  const primaryOrRecurrentEl = document.getElementById("primaryOrRecurrent");
+  const hvpgKnownEl = document.getElementById("hvpgKnown");
+  const timeFromTxLabel = document.getElementById("timeFromTxLabel");
+  const hvpgValueLabel = document.getElementById("hvpgValueLabel");
+  const resultDiv = document.getElementById("result");
+  const caseSummaryDiv = document.getElementById("caseSummary");
+  const validationBox = document.getElementById("validationBox");
+  const validationList = document.getElementById("validationList");
+  const resetBtn = document.getElementById("resetBtn");
+  const exportCsvBtn = document.getElementById("exportCsvBtn");
+
+  const BIBLIO = {
+    malik2025: "Malik AK, Geh D, Jeffry Evans TR, Chow PKH, Mann DA, White SA. Improving surgical treatments for hepatocellular carcinoma. Nat Rev Gastroenterol Hepatol. 2026;23(3):208-226. doi:10.1038/s41575-025-01143-y. PMID:41249657.",
+    yaoUNOS: "Ju MR, Yopp AC. Evolving thresholds for liver transplantation in hepatocellular carcinoma: a Western experience. Ann Gastroenterol Surg. 2020;4(3):208-215. doi:10.1002/ags3.12316. PMID:32490334.",
+    qiPVTT: "Zhang XP, Wang K, Li N, Zhong CQ, Wei XB, Cheng YQ, et al. Survival benefit of hepatic resection versus transarterial chemoembolization for hepatocellular carcinoma with portal vein tumor thrombus: a systematic review and meta-analysis. BMC Cancer. 2017;17(1):902. doi:10.1186/s12885-017-3895-z. PMID:29282010.",
+    kangNMA: "Luo J, Xu L, Li L, Zhang J, Zhang M, Xu M. Comparison of treatments for hepatocellular carcinoma patients with portal vein thrombosis: a systematic review and network meta-analysis. Ann Transl Med. 2021;9(18):1450. doi:10.21037/atm-21-3937. PMID:34734002.",
+    poonRHR: "Poon RTP, Fan ST, Lo CM, Liu CL, Wong J. Long-term survival and pattern of recurrence after resection of small hepatocellular carcinoma in patients with preserved liver function: implications for a strategy of salvage transplantation. Ann Surg. 2002;235(3):373-382. doi:10.1097/00000658-200203000-00009. PMID:11882759.",
+    rhrVsRFA: "Yuan BH, Zhu YK, Zou XM, Zhou HD, Li RH, Zhong JH. Repeat hepatic resection versus percutaneous ablation for the treatment of recurrent hepatocellular carcinoma: meta-analysis. BJS Open. 2022;6(2):zrac036. doi:10.1093/bjsopen/zrac036. PMID:35482024.",
+    slt: "Llovet JM, Fuster J, Bruix J. The Barcelona approach: diagnosis, staging, and treatment of hepatocellular carcinoma. Liver Transpl. 2004;10(2 Suppl 1):S115-S120. doi:10.1002/lt.20034. PMID:14762851.",
+    imbrave050: "Qin S, Chen M, Cheng AL, Kaseb AO, Kudo M, Lee HC, et al; IMbrave050 investigators. Atezolizumab plus bevacizumab versus active surveillance in patients with resected or ablated high-risk hepatocellular carcinoma (IMbrave050): a randomised, open-label, multicentre, phase 3 trial. Lancet. 2023;402(10415):1835-1847. doi:10.1016/S0140-6736(23)01796-8. PMID:37871608."
+  };
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function getBool(id) {
+    return byId(id).value === "true";
+  }
+
+  function updateConditionalFields() {
+    const isRecurrence = primaryOrRecurrentEl.value === "RECURRENCE";
+    const hvpgKnown = hvpgKnownEl.value === "true";
+    timeFromTxLabel.classList.toggle("hidden", !isRecurrence);
+    hvpgValueLabel.classList.toggle("hidden", !hvpgKnown);
+  }
+
+  function hideOutputs() {
+    resultDiv.classList.add("hidden");
+    caseSummaryDiv.classList.add("hidden");
+    validationBox.classList.add("hidden");
+    validationList.innerHTML = "";
+  }
+
+  function hasClinicallySignificantPHT(p) {
+    if (p.hvpgKnown) return p.hvpg >= 10;
+    return (p.platelets < 100 && p.splenomegaly);
+  }
+
+  function flrAdequateForResection(p) {
+    const cirrhoticOrPortalHT = (p.childPugh !== "A" || hasClinicallySignificantPHT(p));
+    if (!cirrhoticOrPortalHT) return p.flrPercent >= 20;
+    return p.flrPercent >= 40 && p.flrQualityGood;
+  }
+
+  function isHighBiologicRiskPrimary(p) {
+    return (
+      p.maxTumorSizeCm > 5 ||
+      p.numTumors > 3 ||
+      p.pvttGrade !== "Vp0" ||
+      p.afp > 400 ||
+      p.dcp > 400 ||
+      p.macrotrabecular ||
+      p.petHighUptake ||
+      p.afpTrend === "RISING"
+    );
+  }
+
+  function withinMilan(p) {
+    if (p.pvttGrade !== "Vp0" || p.extrahepaticDisease) return false;
+    if (p.numTumors === 1 && p.maxTumorSizeCm <= 5) return true;
+    if (p.numTumors <= 3 && p.maxTumorSizeCm <= 3) return true;
+    return false;
+  }
+
+  function withinExpandedCriteria(p) {
+    if (p.pvttGrade !== "Vp0" || p.extrahepaticDisease) return false;
+    return (p.maxTumorSizeCm + p.numTumors) <= 7;
+  }
+
+  function collectPatientData() {
+    return {
+      caseId: byId("caseId").value.trim(),
+      evaluationDate: byId("evaluationDate").value,
+      age: Number(byId("age").value),
+      ecog: Number(byId("ecog").value),
+      etiology: byId("etiology").value,
+      childPugh: byId("childPugh").value,
+      albiGrade: Number(byId("albiGrade").value),
+      platelets: Number(byId("platelets").value),
+      hvpgKnown: hvpgKnownEl.value === "true",
+      hvpg: Number(byId("hvpg").value),
+      splenomegaly: getBool("splenomegaly"),
+      ascites: getBool("ascites"),
+      encephalopathy: getBool("encephalopathy"),
+      flrPercent: Number(byId("flrPercent").value),
+      flrQualityGood: getBool("flrQualityGood"),
+      diabetes2: getBool("diabetes2"),
+      prediabetes: getBool("prediabetes"),
+      insulinResistance: getBool("insulinResistance"),
+      obesity: getBool("obesity"),
+      overweight: getBool("overweight"),
+      primaryOrRecurrent: primaryOrRecurrentEl.value,
+      timeFromCurativeTxMonths: primaryOrRecurrentEl.value === "RECURRENCE"
+        ? Number(byId("timeFromCurativeTxMonths").value)
+        : null,
+      bclcStage: byId("bclcStage").value,
+      numTumors: Number(byId("numTumors").value),
+      maxTumorSizeCm: Number(byId("maxTumorSizeCm").value),
+      bilobarDisease: getBool("bilobarDisease"),
+      pvttGrade: byId("pvttGrade").value,
+      extrahepaticDisease: getBool("extrahepaticDisease"),
+      afp: Number(byId("afp").value),
+      afpTrend: byId("afpTrend").value,
+      dcp: Number(byId("dcp").value),
+      macrotrabecular: getBool("macrotrabecular"),
+      petHighUptake: getBool("petHighUptake"),
+      transplantAccess: byId("transplantAccess").value,
+      tareAvailable: getBool("tareAvailable"),
+      sbrtAvailable: getBool("sbrtAvailable"),
+      immunotherapyAvailable: getBool("immunotherapyAvailable")
+    };
+  }
+
+  function validatePatientData(p) {
+    const errors = [];
+
+    if (p.caseId && /[áéíóúüña-z]{2,}\s+[áéíóúüña-z]{2,}/i.test(p.caseId)) {
+      errors.push("El ID del caso debe estar seudonimizado; evita nombres o apellidos reales.");
+    }
+    if (p.evaluationDate && Number.isNaN(new Date(p.evaluationDate).getTime())) {
+      errors.push("La fecha de evaluación no es válida.");
+    }
+    if (!Number.isFinite(p.age) || p.age < 18 || p.age > 100) {
+      errors.push("La edad debe estar entre 18 y 100 años.");
+    }
+    if (!Number.isFinite(p.ecog) || p.ecog < 0 || p.ecog > 4) {
+      errors.push("ECOG debe estar entre 0 y 4.");
+    }
+    if (!Number.isFinite(p.platelets) || p.platelets < 10 || p.platelets > 500) {
+      errors.push("Las plaquetas deben estar entre 10 y 500 ×10³/µL.");
+    }
+    if (p.hvpgKnown && (!Number.isFinite(p.hvpg) || p.hvpg < 1 || p.hvpg > 25)) {
+      errors.push("Si HVPG es conocido, debes capturar un valor entre 1 y 25 mmHg.");
+    }
+    if (!Number.isFinite(p.flrPercent) || p.flrPercent < 10 || p.flrPercent > 90) {
+      errors.push("El FLR debe estar entre 10% y 90%.");
+    }
+    if (!Number.isFinite(p.numTumors) || p.numTumors < 1 || p.numTumors > 20) {
+      errors.push("El número de tumores debe estar entre 1 y 20.");
+    }
+    if (!Number.isFinite(p.maxTumorSizeCm) || p.maxTumorSizeCm <= 0 || p.maxTumorSizeCm > 30) {
+      errors.push("El tamaño máximo tumoral debe ser mayor de 0 y no exceder 30 cm.");
+    }
+    if (!Number.isFinite(p.afp) || p.afp < 0 || p.afp > 1000000) {
+      errors.push("AFP debe ser un valor no negativo y clínicamente plausible.");
+    }
+    if (!Number.isFinite(p.dcp) || p.dcp < 0 || p.dcp > 1000000) {
+      errors.push("DCP debe ser un valor no negativo y clínicamente plausible.");
+    }
+    if (p.primaryOrRecurrent === "RECURRENCE" && (!Number.isFinite(p.timeFromCurativeTxMonths) || p.timeFromCurativeTxMonths < 0)) {
+      errors.push("En recurrencia, los meses desde tratamiento previo deben ser 0 o mayores.");
+    }
+    if (p.childPugh === "C" && p.flrPercent < 40 && p.transplantAccess === "NO") {
+      errors.push("Child-Pugh C con FLR bajo y sin acceso a trasplante sugiere muy baja factibilidad de cirugía; revisa si la captura es correcta.");
+    }
+    return errors;
+  }
+
+  function renderValidation(errors) {
+    validationList.innerHTML = "";
+    errors.forEach(error => {
+      const li = document.createElement("li");
+      li.textContent = error;
+      validationList.appendChild(li);
+    });
+    validationBox.classList.remove("hidden");
+    validationBox.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function cleanEvidenceText(text) {
+    return text.replace(/\s*\[(?:file|web):[^\]]+\]/g, "").replace(/\s{2,}/g, " ").trim();
+  }
+
+  function createDecisionTemplate() {
+    return {
+      intent: "CURATIVE",
+      primaryRecommendation: "",
+      secondaryOptions: [],
+      evidenceNotes: [],
+      biblioKeys: [],
+      factorsFor: [],
+      factorsAgainst: []
+    };
+  }
+
+  function decideHCCStrategy(patient) {
+    const result = createDecisionTemplate();
+
+    if (patient.ecog > 2 ||
+        (patient.childPugh === "C" && patient.transplantAccess !== "GOOD") ||
+        (patient.extrahepaticDisease && patient.primaryOrRecurrent === "PRIMARY")) {
+      result.intent = "NON_CURATIVE";
+      result.primaryRecommendation =
+        "Manejo sistémico/locorregional (BCLC C/D); no se recomienda cirugía con intención curativa en estas condiciones.";
+      result.evidenceNotes.push(
+        "Basado en BCLC y guías EASL/AASLD: resección y trasplante se reservan a pacientes con función hepática y estado general adecuados."
+      );
+      result.biblioKeys.push("malik2025");
+      if (patient.ecog > 2) result.factorsAgainst.push("ECOG > 2.");
+      if (patient.childPugh === "C") result.factorsAgainst.push("Child-Pugh C sin acceso favorable a trasplante.");
+      if (patient.extrahepaticDisease) result.factorsAgainst.push("Enfermedad extrahepática presente.");
+      return result;
+    }
+
+    const decision = patient.primaryOrRecurrent === "PRIMARY"
+      ? decidePrimary(patient)
+      : decideRecurrence(patient);
+
+    return decision;
+  }
+
+  function decidePrimary(p) {
+    const r = createDecisionTemplate();
+    r.biblioKeys.push("malik2025");
+
+    const cspht = hasClinicallySignificantPHT(p);
+    const canResect = flrAdequateForResection(p) && !cspht && p.childPugh === "A";
+    const milan = withinMilan(p);
+    const expanded = withinExpandedCriteria(p);
+    const highRisk = isHighBiologicRiskPrimary(p);
+
+    if (p.childPugh === "A") r.factorsFor.push("Child-Pugh A.");
+    if (flrAdequateForResection(p)) r.factorsFor.push("FLR compatible con resección en el contexto actual.");
+    if (!cspht) r.factorsFor.push("Sin datos de hipertensión portal clínicamente significativa.");
+    if (milan) r.factorsFor.push("Tumor dentro de criterios de Milán.");
+    if (expanded && !milan) r.factorsFor.push("Tumor dentro de criterio expandido tipo up-to-7.");
+    if (p.transplantAccess === "GOOD") r.factorsFor.push("Acceso favorable a trasplante.");
+    if (p.etiology === "MASLD" && (p.diabetes2 || p.obesity || p.insulinResistance)) r.factorsAgainst.push("Contexto metabólico asociado a MASLD/MASH; integrar riesgo global perioperatorio.");
+
+    if (cspht) r.factorsAgainst.push("Sospecha de hipertensión portal clínicamente significativa.");
+    if (p.childPugh !== "A") r.factorsAgainst.push("Función hepática no ideal para resección.");
+    if (!flrAdequateForResection(p)) r.factorsAgainst.push("FLR insuficiente para el contexto hepático actual.");
+    if (highRisk) r.factorsAgainst.push("Biología tumoral de alto riesgo.");
+    if (p.pvttGrade !== "Vp0") r.factorsAgainst.push(`PVTT ${p.pvttGrade}.`);
+    if (p.extrahepaticDisease) r.factorsAgainst.push("Enfermedad extrahepática presente.");
+
+    if (p.pvttGrade === "Vp0") {
+      if (canResect) {
+        if (milan && !highRisk && p.transplantAccess !== "GOOD") {
+          r.primaryRecommendation =
+            "Resección hepática primaria con intención curativa; planificar trasplante de rescate si recurre dentro de criterios.";
+          r.secondaryOptions.push("Seguimiento estrecho post-resección y reevaluación periódica de elegibilidad para trasplante de rescate.");
+          r.evidenceNotes.push("La estrategia resection-first seguida de salvage liver transplantation puede ofrecer supervivencia global comparable a trasplante primario en pacientes seleccionados dentro de Milán cuando existe escasez de órganos.");
+          r.biblioKeys.push("yaoUNOS", "slt");
+        } else if (milan && p.transplantAccess === "GOOD" && (highRisk || cspht)) {
+          r.primaryRecommendation =
+            "Priorizar trasplante hepático primario, por cirrosis avanzada y/o biología tumoral adversa.";
+          r.secondaryOptions.push("Considerar resección sólo si el acceso real a trasplante se retrasa o existe contraindicación al trasplante.");
+          r.evidenceNotes.push("Dentro de Milán, el trasplante reduce recurrencia y ofrece mejor control a largo plazo que la resección en pacientes seleccionados con reserva hepática limitada o biología adversa.");
+          r.biblioKeys.push("yaoUNOS");
+        } else {
+          r.primaryRecommendation =
+            "Resección hepática primaria con intención curativa; valorar papel posterior de trasplante según evolución y recurrencia.";
+          r.evidenceNotes.push("En BCLC 0-A y algunos BCLC B seleccionados, la resección moderna puede lograr supervivencias a 5 años cercanas a 50-60% en centros expertos.");
+        }
+
+        if (highRisk && p.immunotherapyAvailable) {
+          r.secondaryOptions.push("Considerar atezolizumab más bevacizumab adyuvante en contexto de alto riesgo, si no se prevé trasplante cercano y no hay contraindicaciones.");
+          r.evidenceNotes.push("IMbrave050 mostró mejoría en recurrencia libre de enfermedad tras resección o ablación en pacientes de alto riesgo.");
+          r.biblioKeys.push("imbrave050");
+        }
+        return r;
+      }
+
+      if ((milan || expanded) && p.transplantAccess !== "NO") {
+        r.primaryRecommendation =
+          "No se recomienda resección por reserva hepática y/o hipertensión portal; priorizar trasplante con terapia puente según disponibilidad local.";
+        r.secondaryOptions.push("Valorar TACE, TARE o SBRT como puente mientras se mantiene elegibilidad oncológica.");
+        r.evidenceNotes.push("La hipertensión portal y la reserva hepática limitada aumentan el riesgo de descompensación post-resección; en ese escenario el trasplante suele ser la estrategia preferente si está disponible.");
+        r.biblioKeys.push("yaoUNOS");
+        return r;
+      }
+
+      if (!milan && expanded && (p.tareAvailable || p.sbrtAvailable)) {
+        r.primaryRecommendation =
+          "Proponer downstaging locorregional para intentar entrar a criterios de trasplante.";
+        r.secondaryOptions.push("Si entra y se mantiene en criterio durante seguimiento apropiado, ofrecer trasplante; si no, continuar manejo no curativo según etapa.");
+        r.evidenceNotes.push("Los programas de downstaging exitoso permiten alcanzar resultados post-trasplante cercanos a los observados en pacientes inicialmente dentro de Milán.");
+        r.biblioKeys.push("yaoUNOS");
+        return r;
+      }
+
+      r.primaryRecommendation =
+        "No se recomienda cirugía ni trasplante de entrada; orientar tratamiento sistémico o locorregional según BCLC y contexto del centro.";
+      r.evidenceNotes.push("Si no existen condiciones claras para resección o trasplante, el manejo debe seguir los algoritmos oncológicos estándar y reevaluarse dinámicamente.");
+      return r;
+    }
+
+    if (p.pvttGrade === "Vp1" || p.pvttGrade === "Vp2") {
+      const canResectPVTT = flrAdequateForResection(p) && p.childPugh === "A" && !p.extrahepaticDisease;
+      if (canResectPVTT) {
+        r.primaryRecommendation =
+          "Resección hepática con trombectomía portal en centro experto, con intención curativa, sólo tras selección estricta.";
+        r.secondaryOptions.push("Considerar terapia adyuvante locorregional si la función hepática lo permite y existe experiencia institucional.");
+        r.evidenceNotes.push("En PVTT Vp1-Vp2, series observacionales y metaanálisis sugieren mejor supervivencia con resección frente a alternativas no quirúrgicas en pacientes muy seleccionados.");
+        r.biblioKeys.push("qiPVTT", "kangNMA");
+        return r;
+      }
+      r.primaryRecommendation =
+        "No candidato adecuado a resección en PVTT Vp1-Vp2; recomendar downstaging con terapias locorregionales y/o sistémicas, con reevaluación posterior.";
+      r.evidenceNotes.push("Cuando la reserva hepática es limitada o la selección no es favorable, la resección con PVTT incrementa riesgo perioperatorio y recurrencia.");
+      r.biblioKeys.push("kangNMA");
+      return r;
+    }
+
+    r.primaryRecommendation =
+      "No se recomienda cirugía inicial en PVTT Vp3-Vp4; proponer manejo no quirúrgico con eventual reconsideración sólo si existe downstaging relevante en centro experto.";
+    r.evidenceNotes.push("En PVTT troncal, la cirugía inicial suele asociarse a muy alta recurrencia y peores desenlaces, por lo que habitualmente se favorece manejo no quirúrgico.");
+    r.biblioKeys.push("kangNMA");
+    return r;
+  }
+
+  function decideRecurrence(p) {
+    const r = createDecisionTemplate();
+    r.biblioKeys.push("malik2025");
+
+    const months = p.timeFromCurativeTxMonths;
+    const early = months !== null && months < 24;
+    const limitedIntrahepatic = !p.extrahepaticDisease && p.pvttGrade === "Vp0" && p.numTumors <= 3 && p.maxTumorSizeCm <= 3;
+    const canRHR = flrAdequateForResection(p) && p.childPugh === "A" && p.ecog <= 1;
+
+    if (limitedIntrahepatic) r.factorsFor.push("Recurrencia intrahepática limitada.");
+    if (canRHR) r.factorsFor.push("Perfil compatible con repetición de resección.");
+    if (!early && p.primaryOrRecurrent === "RECURRENCE") r.factorsFor.push("Recurrencia tardía (≥24 meses).");
+    if (withinMilan(p)) r.factorsFor.push("Recurrencia dentro de Milán.");
+    if (p.transplantAccess !== "NO") r.factorsFor.push("Existe posibilidad de trasplante de rescate.");
+
+    if (early) r.factorsAgainst.push("Recurrencia temprana (<24 meses), sugiere biología más agresiva.");
+    if (p.extrahepaticDisease) r.factorsAgainst.push("Enfermedad extrahepática presente.");
+    if (p.pvttGrade !== "Vp0") r.factorsAgainst.push(`PVTT ${p.pvttGrade} en recurrencia.`);
+    if (!flrAdequateForResection(p)) r.factorsAgainst.push("Reserva hepática insuficiente para nueva resección.");
+    if (p.ecog > 1) r.factorsAgainst.push("ECOG mayor de 1, limita opciones quirúrgicas repetidas.");
+
+    if (limitedIntrahepatic) {
+      if (canRHR) {
+        if (!early) {
+          r.primaryRecommendation =
+            "Repetir resección hepática como tratamiento preferente para recurrencia intrahepática limitada y tardía.";
+          r.secondaryOptions.push("Ablación percutánea si la localización es favorable o el riesgo quirúrgico aumenta.");
+          r.evidenceNotes.push("En recurrencias limitadas y tardías, la repetición de resección puede lograr supervivencia global prolongada y, en varias series, mejor control local que la ablación.");
+          r.biblioKeys.push("poonRHR", "rhrVsRFA");
+        } else {
+          r.primaryRecommendation =
+            "Repetición de resección posible, pero la recurrencia temprana obliga a discutir trasplante de rescate si el paciente es elegible.";
+          r.secondaryOptions.push("Si trasplante no es factible, individualizar entre nueva resección, ablación y seguimiento intensivo según riesgo biológico y reserva hepática.");
+          r.evidenceNotes.push("La recurrencia temprana suele reflejar biología tumoral agresiva; en candidatos apropiados, el trasplante de rescate ofrece mejor control global.");
+          r.biblioKeys.push("poonRHR", "slt");
+        }
+        return r;
+      }
+
+      r.primaryRecommendation =
+        "Ablación percutánea como opción curativa para recurrencia intrahepática limitada en pacientes no aptos para repetición de resección.";
+      r.evidenceNotes.push("En lesiones pequeñas y seleccionadas, la ablación puede ofrecer supervivencia global similar con menor morbilidad inmediata que una nueva cirugía.");
+      r.biblioKeys.push("rhrVsRFA");
+      return r;
+    }
+
+    if (!p.extrahepaticDisease && (withinMilan(p) || withinExpandedCriteria(p)) && p.transplantAccess !== "NO") {
+      r.primaryRecommendation =
+        "Proponer trasplante hepático de rescate como opción curativa principal para la recurrencia.";
+      r.secondaryOptions.push("Repetición de resección o ablación pueden considerarse si la función es excelente y el acceso a injerto es muy limitado.");
+      r.evidenceNotes.push("El trasplante de rescate es un pilar de la estrategia resection-first y puede ofrecer control oncológico duradero en recurrencia seleccionada.");
+      r.biblioKeys.push("slt");
+      return r;
+    }
+
+    if (p.pvttGrade === "Vp1" || p.pvttGrade === "Vp2") {
+      const canResectPVTT = flrAdequateForResection(p) && p.childPugh === "A" && !p.extrahepaticDisease;
+      if (canResectPVTT) {
+        r.primaryRecommendation =
+          "Considerar resección de rescate más trombectomía sólo en centro experto y tras selección muy estricta.";
+        r.evidenceNotes.push("La evidencia para cirugía en recurrencia con PVTT es limitada y observacional; se debe individualizar caso por caso.");
+        r.biblioKeys.push("qiPVTT", "kangNMA");
+        return r;
+      }
+    }
+
+    r.intent = "NON_CURATIVE";
+    r.primaryRecommendation =
+      "Recurrencia no curable mediante cirugía o trasplante; recomendar terapia sistémica con o sin tratamiento locorregional según distribución tumoral y reserva hepática.";
+    r.evidenceNotes.push("La recurrencia con enfermedad extrahepática, PVTT extensa o carga tumoral no rescatable rara vez se beneficia de cirugía; el foco debe ser control oncológico y preservación funcional.");
+    r.biblioKeys.push("kangNMA");
+    return r;
+  }
+
+  function uniqueBiblioKeys(keys) {
+    return [...new Set((keys || []).filter(key => Boolean(BIBLIO[key])))];
+  }
+
+
+  function translateEtiology(value) {
+    const map = {
+      HBV: "VHB",
+      HCV: "VHC",
+      MASLD: "MASLD/MASH",
+      ALCOHOL: "Alcohol",
+      AUTOIMMUNE: "Hepatitis autoinmune",
+      PBC: "Colangitis biliar primaria",
+      CHOLESTATIC: "Otras colestásicas",
+      OTHER: "Otra"
+    };
+    return map[value] || value;
+  }
+
+  function metabolicBurdenText(p) {
+    const items = [];
+    if (p.diabetes2) items.push("DM2");
+    if (p.prediabetes) items.push("prediabetes");
+    if (p.insulinResistance) items.push("resistencia a la insulina");
+    if (p.obesity) items.push("obesidad");
+    if (p.overweight) items.push("sobrepeso");
+    return items.length ? items.join(", ") : "Sin comorbilidades metabólicas mayores capturadas";
+  }
+
+  function exportCurrentCaseCsv() {
+    const p = collectPatientData();
+    const res = decideHCCStrategy(p);
+    const row = {
+      fecha_exportacion: new Date().toISOString(),
+      id_caso: p.caseId || "",
+      fecha_evaluacion: p.evaluationDate || "",
+      escenario: p.primaryOrRecurrent,
+      edad: p.age,
+      ecog: p.ecog,
+      etiologia: translateEtiology(p.etiology),
+      child_pugh: p.childPugh,
+      albi: p.albiGrade,
+      plaquetas: p.platelets,
+      hvpg_conocido: p.hvpgKnown ? "Sí" : "No",
+      hvpg: p.hvpgKnown ? p.hvpg : "",
+      esplenomegalia: p.splenomegaly ? "Sí" : "No",
+      ascitis: p.ascites ? "Sí" : "No",
+      encefalopatia: p.encephalopathy ? "Sí" : "No",
+      flr_percent: p.flrPercent,
+      calidad_flr: p.flrQualityGood ? "Sí" : "No",
+      diabetes2: p.diabetes2 ? "Sí" : "No",
+      prediabetes: p.prediabetes ? "Sí" : "No",
+      resistencia_insulina: p.insulinResistance ? "Sí" : "No",
+      obesidad: p.obesity ? "Sí" : "No",
+      sobrepeso: p.overweight ? "Sí" : "No",
+      bclc: p.bclcStage,
+      numero_tumores: p.numTumors,
+      tamano_max_cm: p.maxTumorSizeCm,
+      pvtt: p.pvttGrade,
+      enfermedad_extrahepatica: p.extrahepaticDisease ? "Sí" : "No",
+      afp: p.afp,
+      tendencia_afp: translateAfpTrend(p.afpTrend),
+      dcp: p.dcp,
+      trasplante: translateTransplantAccess(p.transplantAccess),
+      recomendacion: res.primaryRecommendation,
+      intencion: res.intent
+    };
+    const headers = Object.keys(row);
+    const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = [headers.join(","), headers.map(h => escape(row[h])).join(",")].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `hcc_caso_${new Date().toISOString().slice(0,19).replace(/[:T]/g, '-')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  function renderCaseSummary(p) {
+    const summaryGrid = byId("summaryGrid");
+    const cspht = hasClinicallySignificantPHT(p);
+    const milan = withinMilan(p);
+    const expanded = withinExpandedCriteria(p);
+    const summaryItems = [
+      ["Registro", `${p.caseId ? `Caso ${p.caseId}` : "Caso sin ID"}${p.evaluationDate ? ` · evaluación ${p.evaluationDate}` : ""}`],
+      ["Escenario", p.primaryOrRecurrent === "PRIMARY" ? "Tumor primario" : `Recurrencia (${p.timeFromCurativeTxMonths} meses desde tratamiento previo)`],
+      ["Función hepática", `Child-Pugh ${p.childPugh}, ALBI ${p.albiGrade}`],
+      ["Etiología", translateEtiology(p.etiology)],
+      ["Hipertensión portal", p.hvpgKnown ? `HVPG ${p.hvpg} mmHg${cspht ? " (compatible con CSPH)" : ""}` : (cspht ? "Sospecha clínica de CSPH" : "Sin fuerte sospecha clínica de CSPH")],
+      ["Carga tumoral", `${p.numTumors} tumor(es), tamaño máximo ${p.maxTumorSizeCm} cm, ${p.bilobarDisease ? "bilobar" : "no bilobar"}`],
+      ["Extensión", `${p.pvttGrade}${p.extrahepaticDisease ? ", con enfermedad extrahepática" : ", sin enfermedad extrahepática"}`],
+      ["Criterios de trasplante", milan ? "Dentro de Milán" : (expanded ? "Fuera de Milán, dentro de expandido" : "Fuera de criterios usuales")],
+      ["Biología tumoral", `AFP ${p.afp} ng/mL (${translateAfpTrend(p.afpTrend)}), DCP ${p.dcp}`],
+      ["Factibilidad quirúrgica", flrAdequateForResection(p) ? "FLR aceptable para el contexto actual" : "FLR no suficiente para el contexto actual"],
+      ["Acceso a trasplante", translateTransplantAccess(p.transplantAccess)],
+      ["Comorbilidad metabólica", metabolicBurdenText(p)]
+    ];
+
+    summaryGrid.innerHTML = "";
+    summaryItems.forEach(([title, value]) => {
+      const box = document.createElement("div");
+      box.className = "fact-box";
+      box.innerHTML = `<h4>${title}</h4><p>${value}</p>`;
+      summaryGrid.appendChild(box);
+    });
+    caseSummaryDiv.classList.remove("hidden");
+  }
+
+  function renderResult(res) {
+    const intentBadge = byId("intentBadge");
+    const primary = byId("primaryRecommendation");
+    const factorsFor = byId("factorsForCurative");
+    const factorsAgainst = byId("factorsAgainstCurative");
+    const secondary = byId("secondaryOptions");
+    const evidence = byId("evidenceNotes");
+    const biblioList = byId("biblioList");
+
+    resultDiv.classList.remove("hidden");
+    factorsFor.innerHTML = "";
+    factorsAgainst.innerHTML = "";
+    secondary.innerHTML = "";
+    evidence.innerHTML = "";
+    biblioList.innerHTML = "";
+
+    if (res.intent === "CURATIVE") {
+      intentBadge.textContent = "INTENCIÓN CURATIVA POSIBLE";
+      intentBadge.className = "badge badge-curative";
+    } else {
+      intentBadge.textContent = "NO INTENCIÓN CURATIVA";
+      intentBadge.className = "badge badge-noncurative";
+    }
+
+    primary.textContent = res.primaryRecommendation;
+
+    renderList(factorsFor, res.factorsFor, "No hay factores favorables destacados con la captura actual.");
+    renderList(factorsAgainst, res.factorsAgainst, "No se identifican alertas mayores adicionales con la captura actual.");
+    renderList(secondary, res.secondaryOptions, "Sin recomendaciones secundarias adicionales.");
+
+    const evidenceUl = document.createElement("ul");
+    (res.evidenceNotes || []).forEach(note => {
+      const li = document.createElement("li");
+      li.textContent = cleanEvidenceText(note);
+      evidenceUl.appendChild(li);
+    });
+    if (!evidenceUl.children.length) {
+      const li = document.createElement("li");
+      li.textContent = "Sin notas adicionales.";
+      evidenceUl.appendChild(li);
+    }
+    evidence.appendChild(evidenceUl);
+
+    uniqueBiblioKeys(res.biblioKeys).forEach(key => {
+      const li = document.createElement("li");
+      li.textContent = BIBLIO[key];
+      biblioList.appendChild(li);
+    });
+
+    setTimeout(() => {
+      resultDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
+  function renderList(target, items, fallback) {
+    if (items && items.length) {
+      items.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        target.appendChild(li);
+      });
+      return;
+    }
+    const li = document.createElement("li");
+    li.textContent = fallback;
+    target.appendChild(li);
+  }
+
+  function translateAfpTrend(value) {
+    if (value === "RISING") return "ascendente";
+    if (value === "DECLINING") return "descendente";
+    return "estable";
+  }
+
+  function translateTransplantAccess(value) {
+    if (value === "GOOD") return "Bueno (donante vivo o lista corta)";
+    if (value === "LIMITED") return "Limitado";
+    return "No disponible";
+  }
+
+  function runDecision() {
+    hideOutputs();
+    updateConditionalFields();
+    const patient = collectPatientData();
+    const errors = validatePatientData(patient);
+
+    if (errors.length) {
+      renderValidation(errors);
+      return;
+    }
+
+    renderCaseSummary(patient);
+    const result = decideHCCStrategy(patient);
+    renderResult(result);
+  }
+
+  function smartReset() {
+    form.reset();
+    updateConditionalFields();
+    hideOutputs();
+    byId("caseId").value = "";
+    byId("evaluationDate").value = new Date().toISOString().slice(0, 10);
+    byId("timeFromCurativeTxMonths").value = 12;
+    byId("hvpg").value = 8;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    runDecision();
+  });
+
+  function attachTapSafeHandler(element, handler) {
+    if (!element) return;
+    let touchTriggered = false;
+
+    element.addEventListener("click", function (event) {
+      if (touchTriggered) {
+        touchTriggered = false;
+        return;
+      }
+      handler(event);
+    });
+
+    element.addEventListener("touchend", function (event) {
+      touchTriggered = true;
+      event.preventDefault();
+      handler(event);
+    }, { passive: false });
+  }
+
+  primaryOrRecurrentEl.addEventListener("change", updateConditionalFields);
+  hvpgKnownEl.addEventListener("change", updateConditionalFields);
+  attachTapSafeHandler(resetBtn, smartReset);
+  attachTapSafeHandler(exportCsvBtn, exportCurrentCaseCsv);
+
+  byId("evaluationDate").value = new Date().toISOString().slice(0, 10);
+  updateConditionalFields();
+  hideOutputs();
+
+  window.runDecision = runDecision;
+})();
+</script>
+</body>
+</html>
